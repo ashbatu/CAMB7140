@@ -1,0 +1,13 @@
+
+[quant] fragment length distribution is truncated gaussian with mean = 250, sd = 30
+Warning: you asked for 32, but only 16 cores on the machine
+[index] k-mer length: 31
+[index] number of targets: 328,868
+[index] number of k-mers: 126,186,949
+[quant] running in single-end mode
+[quant] will process file 1: SRR8668759.fastq.gz
+[quant] finding pseudoalignments for the reads ...[progress] 1M reads processed (48.3% mapped)             [progress] 2M reads processed (48.3% mapped)             [progress] 3M reads processed (48.7% mapped)             [progress] 4M reads processed (49.0% mapped)             [progress] 5M reads processed (49.1% mapped)              done
+[quant] processed 5,323,802 reads, 2,616,933 reads pseudoaligned
+[   em] quantifying the abundances ... done
+[   em] the Expectation-Maximization algorithm ran for 1,110 rounds
+

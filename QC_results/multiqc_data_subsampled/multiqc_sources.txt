@@ -1,0 +1,52 @@
+Module	Section	Sample Name	Source
+Kallisto	all_sections	SRR8668755_10K_subsample	/Users/abatugo/MBMI/CAMB7140/SRR8668755_10K_subsample_mapped.log
+Kallisto	all_sections	SRR8668756_10K_subsample	/Users/abatugo/MBMI/CAMB7140/SRR8668756_10K_subsample_mapped.log
+Kallisto	all_sections	SRR8668757_10K_subsample	/Users/abatugo/MBMI/CAMB7140/SRR8668757_10K_subsample_mapped.log
+Kallisto	all_sections	SRR8668758_10K_subsample	/Users/abatugo/MBMI/CAMB7140/SRR8668758_10K_subsample_mapped.log
+Kallisto	all_sections	SRR8668759_10K_subsample	/Users/abatugo/MBMI/CAMB7140/SRR8668759_10K_subsample_mapped.log
+Kallisto	all_sections	SRR8668769_10K_subsample	/Users/abatugo/MBMI/CAMB7140/SRR8668769_10K_subsample_mapped.log
+Kallisto	all_sections	SRR8668771_10K_subsample	/Users/abatugo/MBMI/CAMB7140/SRR8668771_10K_subsample_mapped.log
+Kallisto	all_sections	SRR8668772_10K_subsample	/Users/abatugo/MBMI/CAMB7140/SRR8668772_10K_subsample_mapped.log
+Kallisto	all_sections	SRR8668773_10K_subsample	/Users/abatugo/MBMI/CAMB7140/SRR8668773_10K_subsample_mapped.log
+Kallisto	all_sections	SRR8668774_10K_subsample	/Users/abatugo/MBMI/CAMB7140/SRR8668774_10K_subsample_mapped.log
+Kallisto	all_sections	kallisto | SRR8668769	/Users/abatugo/MBMI/CAMB7140/kallisto/CL08.log
+Kallisto	all_sections	kallisto | SRR8668771	/Users/abatugo/MBMI/CAMB7140/kallisto/CL10.log
+Kallisto	all_sections	kallisto | SRR8668772	/Users/abatugo/MBMI/CAMB7140/kallisto/CL11.log
+Kallisto	all_sections	kallisto | SRR8668773	/Users/abatugo/MBMI/CAMB7140/kallisto/CL12.log
+Kallisto	all_sections	kallisto | SRR8668774	/Users/abatugo/MBMI/CAMB7140/kallisto/CL13.log
+Kallisto	all_sections	kallisto | SRR8668755	/Users/abatugo/MBMI/CAMB7140/kallisto/HS01.log
+Kallisto	all_sections	kallisto | SRR8668756	/Users/abatugo/MBMI/CAMB7140/kallisto/HS02.log
+Kallisto	all_sections	kallisto | SRR8668757	/Users/abatugo/MBMI/CAMB7140/kallisto/HS03.log
+Kallisto	all_sections	kallisto | SRR8668758	/Users/abatugo/MBMI/CAMB7140/kallisto/HS04.log
+Kallisto	all_sections	kallisto | SRR8668759	/Users/abatugo/MBMI/CAMB7140/kallisto/HS05.log
+Kallisto	all_sections	mappedReads | SRR8668769	/Users/abatugo/MBMI/CAMB7140/mappedReads/CL08.log
+Kallisto	all_sections	mappedReads | SRR8668771	/Users/abatugo/MBMI/CAMB7140/mappedReads/CL10.log
+Kallisto	all_sections	mappedReads | SRR8668772	/Users/abatugo/MBMI/CAMB7140/mappedReads/CL11.log
+Kallisto	all_sections	mappedReads | SRR8668773	/Users/abatugo/MBMI/CAMB7140/mappedReads/CL12.log
+Kallisto	all_sections	mappedReads | SRR8668774	/Users/abatugo/MBMI/CAMB7140/mappedReads/CL13.log
+Kallisto	all_sections	mappedReads | SRR8668755	/Users/abatugo/MBMI/CAMB7140/mappedReads/HS01.log
+Kallisto	all_sections	mappedReads | SRR8668756	/Users/abatugo/MBMI/CAMB7140/mappedReads/HS02.log
+Kallisto	all_sections	mappedReads | SRR8668757	/Users/abatugo/MBMI/CAMB7140/mappedReads/HS03.log
+Kallisto	all_sections	mappedReads | SRR8668758	/Users/abatugo/MBMI/CAMB7140/mappedReads/HS04.log
+Kallisto	all_sections	mappedReads | SRR8668759	/Users/abatugo/MBMI/CAMB7140/mappedReads/HS05.log
+FastQC	all_sections	SRR8668755_10K_subsample	/Users/abatugo/MBMI/CAMB7140/SRR8668755_10K_subsample_fastqc.zip
+FastQC	all_sections	SRR8668756_10K_subsample	/Users/abatugo/MBMI/CAMB7140/SRR8668756_10K_subsample_fastqc.zip
+FastQC	all_sections	SRR8668757_10K_subsample	/Users/abatugo/MBMI/CAMB7140/SRR8668757_10K_subsample_fastqc.zip
+FastQC	all_sections	SRR8668758_10K_subsample	/Users/abatugo/MBMI/CAMB7140/SRR8668758_10K_subsample_fastqc.zip
+FastQC	all_sections	SRR8668759_10K_subsample	/Users/abatugo/MBMI/CAMB7140/SRR8668759_10K_subsample_fastqc.zip
+FastQC	all_sections	SRR8668769_10K_subsample	/Users/abatugo/MBMI/CAMB7140/SRR8668769_10K_subsample_fastqc.zip
+FastQC	all_sections	SRR8668771_10K_subsample	/Users/abatugo/MBMI/CAMB7140/SRR8668771_10K_subsample_fastqc.zip
+FastQC	all_sections	SRR8668772_10K_subsample	/Users/abatugo/MBMI/CAMB7140/SRR8668772_10K_subsample_fastqc.zip
+FastQC	all_sections	SRR8668773_10K_subsample	/Users/abatugo/MBMI/CAMB7140/SRR8668773_10K_subsample_fastqc.zip
+FastQC	all_sections	SRR8668774_10K_subsample	/Users/abatugo/MBMI/CAMB7140/SRR8668774_10K_subsample_fastqc.zip
+FastQC	all_sections	fastqc | SRR8668755	/Users/abatugo/MBMI/CAMB7140/fastqc/SRR8668755_fastqc.zip
+FastQC	all_sections	fastqc | SRR8668755_1M_subsample	/Users/abatugo/MBMI/CAMB7140/fastqc/SRR8668755_1M_subsample_fastqc.zip
+FastQC	all_sections	fastqc | SRR8668756	/Users/abatugo/MBMI/CAMB7140/fastqc/SRR8668756_fastqc.zip
+FastQC	all_sections	fastqc | SRR8668757	/Users/abatugo/MBMI/CAMB7140/fastqc/SRR8668757_fastqc.zip
+FastQC	all_sections	fastqc | SRR8668758	/Users/abatugo/MBMI/CAMB7140/fastqc/SRR8668758_fastqc.zip
+FastQC	all_sections	fastqc | SRR8668759	/Users/abatugo/MBMI/CAMB7140/fastqc/SRR8668759_fastqc.zip
+FastQC	all_sections	fastqc | SRR8668769	/Users/abatugo/MBMI/CAMB7140/fastqc/SRR8668769_fastqc.zip
+FastQC	all_sections	fastqc | SRR8668771	/Users/abatugo/MBMI/CAMB7140/fastqc/SRR8668771_fastqc.zip
+FastQC	all_sections	fastqc | SRR8668772	/Users/abatugo/MBMI/CAMB7140/fastqc/SRR8668772_fastqc.zip
+FastQC	all_sections	fastqc | SRR8668773	/Users/abatugo/MBMI/CAMB7140/fastqc/SRR8668773_fastqc.zip
+FastQC	all_sections	fastqc | SRR8668774	/Users/abatugo/MBMI/CAMB7140/fastqc/SRR8668774_fastqc.zip

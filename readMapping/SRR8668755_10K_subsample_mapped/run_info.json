@@ -1,0 +1,14 @@
+{
+	"n_targets": 328868,
+	"n_bootstraps": 0,
+	"n_processed": 10000,
+	"n_pseudoaligned": 5419,
+	"n_unique": 1052,
+	"p_pseudoaligned": 54.2,
+	"p_unique": 10.5,
+	"kallisto_version": "0.51.1",
+	"index_version": 13,
+	"k-mer length": 31,
+	"start_time": "Wed Jan 14 17:14:55 2026",
+	"call": "kallisto quant -i /Users/abatugo/MBMI/CAMB7140/raw_data/Homo_sapiens.GRCh38.cdna.all.index -o SRR8668755_10K_subsample_mapped --single -l 250 -s 30 -t 8 SRR8668755_10K_subsample.fastq.gz"
+}

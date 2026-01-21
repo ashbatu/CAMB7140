@@ -1,0 +1,22 @@
+Module	Section	Sample Name	Source
+Kallisto	all_sections	kallisto | SRR8668769	/Users/abatugo/MBMI/CAMB7140/course_dataset/kallisto/CL08.log
+Kallisto	all_sections	kallisto | SRR8668771	/Users/abatugo/MBMI/CAMB7140/course_dataset/kallisto/CL10.log
+Kallisto	all_sections	kallisto | SRR8668772	/Users/abatugo/MBMI/CAMB7140/course_dataset/kallisto/CL11.log
+Kallisto	all_sections	kallisto | SRR8668773	/Users/abatugo/MBMI/CAMB7140/course_dataset/kallisto/CL12.log
+Kallisto	all_sections	kallisto | SRR8668774	/Users/abatugo/MBMI/CAMB7140/course_dataset/kallisto/CL13.log
+Kallisto	all_sections	kallisto | SRR8668755	/Users/abatugo/MBMI/CAMB7140/course_dataset/kallisto/HS01.log
+Kallisto	all_sections	kallisto | SRR8668756	/Users/abatugo/MBMI/CAMB7140/course_dataset/kallisto/HS02.log
+Kallisto	all_sections	kallisto | SRR8668757	/Users/abatugo/MBMI/CAMB7140/course_dataset/kallisto/HS03.log
+Kallisto	all_sections	kallisto | SRR8668758	/Users/abatugo/MBMI/CAMB7140/course_dataset/kallisto/HS04.log
+Kallisto	all_sections	kallisto | SRR8668759	/Users/abatugo/MBMI/CAMB7140/course_dataset/kallisto/HS05.log
+FastQC	all_sections	fastqc | SRR8668755	/Users/abatugo/MBMI/CAMB7140/course_dataset/fastqc/SRR8668755_fastqc.zip
+FastQC	all_sections	fastqc | SRR8668755_1M_subsample	/Users/abatugo/MBMI/CAMB7140/course_dataset/fastqc/SRR8668755_1M_subsample_fastqc.zip
+FastQC	all_sections	fastqc | SRR8668756	/Users/abatugo/MBMI/CAMB7140/course_dataset/fastqc/SRR8668756_fastqc.zip
+FastQC	all_sections	fastqc | SRR8668757	/Users/abatugo/MBMI/CAMB7140/course_dataset/fastqc/SRR8668757_fastqc.zip
+FastQC	all_sections	fastqc | SRR8668758	/Users/abatugo/MBMI/CAMB7140/course_dataset/fastqc/SRR8668758_fastqc.zip
+FastQC	all_sections	fastqc | SRR8668759	/Users/abatugo/MBMI/CAMB7140/course_dataset/fastqc/SRR8668759_fastqc.zip
+FastQC	all_sections	fastqc | SRR8668769	/Users/abatugo/MBMI/CAMB7140/course_dataset/fastqc/SRR8668769_fastqc.zip
+FastQC	all_sections	fastqc | SRR8668771	/Users/abatugo/MBMI/CAMB7140/course_dataset/fastqc/SRR8668771_fastqc.zip
+FastQC	all_sections	fastqc | SRR8668772	/Users/abatugo/MBMI/CAMB7140/course_dataset/fastqc/SRR8668772_fastqc.zip
+FastQC	all_sections	fastqc | SRR8668773	/Users/abatugo/MBMI/CAMB7140/course_dataset/fastqc/SRR8668773_fastqc.zip
+FastQC	all_sections	fastqc | SRR8668774	/Users/abatugo/MBMI/CAMB7140/course_dataset/fastqc/SRR8668774_fastqc.zip
