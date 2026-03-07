@@ -1,0 +1,803 @@
+---
+title: "lab7"
+format: html
+---
+
+📌 Project Title
+
+Evaluating Which Human In-Vitro Cell Model Best Reflects COVID-19 Lung Biology Using RNA-seq Data
+
+⸻
+
+📌 Research Question
+
+Among the human cell models infected with SARS-CoV-2 in GSE147507 (NHBE, A549, A549-ACE2, and Calu-3), which one shows gene expression changes most similar to real COVID-19 human lung tissue?
+
+Put even more simply:
+
+Which cell line behaves most like actual COVID-19 lungs?
+
+⸻
+
+📌 Rationale (Why this project matters)
+
+1. Why compare cell lines to real lungs?
+
+Scientists use cell lines to model COVID-19 in the lab. However:
+	•	Not all cell lines respond to infection the same way.
+	•	Some cell lines barely get infected.
+	•	Others have immune responses drastically different from real human lungs.
+
+To know which model is “good,” we can compare:
+
+cell line response vs real COVID-19 lung tissue response
+
+using gene expression changes after infection.
+
+This is called model fidelity, meaning “how well an experimental model represents real human disease.”
+
+⸻
+
+2. What is RNA-seq differential expression (DE)?
+
+RNA-seq measures how much each gene is expressed in a sample.
+
+Differential expression means:
+	•	Compare two conditions
+(e.g., infected vs mock)
+	•	Identify genes that go up or down during infection
+	•	This tells us what biological pathways are activated
+
+In this project you will:
+	•	Compute DEGs for each cell line (infected vs mock)
+	•	Compute DEGs for lung tissue (COVID vs healthy)
+	•	Compare the results
+
+⸻
+
+3. Why PCA? (Simple definition)
+
+PCA = Principal Component Analysis.
+	•	It reduces thousands of genes into 2 dimensions.
+	•	Samples that are more similar cluster closer together.
+	•	Samples that are different appear farther apart.
+
+In this project, PCA will show:
+
+which cell line’s infected samples cluster closest to real COVID-19 lung samples.
+
+This is visual evidence of similarity.
+
+⸻
+
+4. Why this project fits biomedical informatics
+
+This project uses classic BI skills:
+	•	Data exploration
+	•	PCA visualization
+	•	Multi-condition comparison
+	•	Quantitative similarity metrics
+	•	Translational modeling (in vitro → in vivo)
+
+It’s meaningful, feasible in one week, and easy to interpret.
+
+⸻
+
+📌 Dataset Summary (for memory)
+
+You will use ONLY human samples:
+
+Human Cell Lines (in vitro)
+	•	NHBE (primary airway cells)
+	•	A549
+	•	A549-ACE2 (modified with ACE2)
+	•	Calu-3
+
+→ each has mock and SARS-CoV-2 infected samples.
+
+Human Lung Tissue (real patients)
+	•	Healthy lung biopsies
+	•	COVID-19 lung biopsies
+
+→ comparison = real disease signature.
+
+⸻
+
+📌 Project Hypothesis (simple)
+
+Calu-3 and NHBE cells will show gene expression changes more similar to COVID-19 patient lungs than A549 or A549-ACE2 cells.
+
+Because:
+	•	Calu-3 and NHBE are naturally permissive (ACE2-expressing)
+	•	A549 is minimally permissive unless modified
+
+⸻
+
+🧭 📌 Basic Step-by-Step Outline (Beginner Friendly)
+
+(This is the part you’ll follow while doing the project.)
+
+⸻
+
+STEP 0 — Load data & metadata
+	•	Import counts matrix
+	•	Import sample info (cell line, mock/infected, etc.)
+	•	Convert into DESeq2 dataset
+	
+```{r}
+# loading in packages
+library(tidyverse) # already know about this from Step 1 script
+library(edgeR) # well known package for differential expression analysis, but we only use for the DGEList object and for normalization methods
+library(matrixStats) # let's us easily calculate stats on rows or columns of a data matrix
+library(cowplot)
+library(DescTools)
+library(tximport)
+library(reshape2)
+library(edgeR)
+library(matrixStats)
+library(cowplot)
+library(plotly)
+```
+
+	
+```{r}
+# loading the study data
+studyDesign <- read.table("~/MBMI/CAMB7140/labs/lab7/studyDesign.txt", header = TRUE, sep = "\t", stringsAsFactors = FALSE) %>% 
+  as.tibble()
+
+# getting sample labels 
+sampleLabels <- studyDesign$sample
+
+# importing human raw reads counts data
+human_raw_reads <- read_tsv('~/MBMI/CAMB7140/labs/lab7/GSE147507_RawReadCounts_Human.tsv')
+
+# renaming the first column 
+names(human_raw_reads)[1] <- "geneID"
+
+# converting raw reads to matrix
+human_raw_reads <- human_raw_reads %>% 
+  column_to_rownames("geneID") %>% 
+  as.matrix()
+
+# creating a DGEList object from the raw reads counts data for humans 
+human_DGEList <- DGEList(human_raw_reads)
+```
+
+```{r}
+# use the 'cpm' function from EdgeR to get counts per million
+cpm <- edgeR::cpm(human_DGEList) 
+colSums(cpm)
+log2.cpm <- edgeR::cpm(human_DGEList, log=TRUE)
+```
+
+```{r}
+# 'coerce' your data matrix to a dataframe so that you can use tidyverse tools on it
+log2.cpm.df <- as_tibble(log2.cpm, rownames = "geneID")
+log2.cpm.df
+# use the tidy package to 'pivot' your dataframe (from wide to long)
+log2.cpm.df.pivot <- pivot_longer(log2.cpm.df, # dataframe to be pivoted
+                                  cols = Series1_NHBE_Mock_1:`Series16_A549-ACE2_SARS-CoV-2_Rux_3`, # column names to be stored as a SINGLE variable
+                                  names_to = "samples", # name of that new variable (column)
+                                  values_to = "expression") # name of new variable (column) storing all the values (data)
+
+# let's look at the impact of pivoting the data
+log2.cpm.df.pivot
+```
+
+```{r}
+# filtering 
+cpm <- cpm(human_DGEList)
+keepers <- rowSums(cpm>1)>=5 #user defined
+human_DGEList.filtered <- human_DGEList[keepers,]
+
+log2.cpm.filtered <- cpm(human_DGEList.filtered, log=TRUE)
+log2.cpm.filtered.df <- as_tibble(log2.cpm.filtered, rownames = "geneID")
+colnames(log2.cpm.filtered.df) <- c("geneID", sampleLabels)
+
+# normalizing
+human_DGEList.filtered.norm <- calcNormFactors(human_DGEList.filtered, method = "TMM")
+log2.cpm.filtered.norm <- cpm(human_DGEList.filtered.norm, log=TRUE)
+log2.cpm.filtered.norm.df <- as_tibble(log2.cpm.filtered.norm, rownames = "geneID")
+colnames(log2.cpm.filtered.norm.df) <- c("geneID", sampleLabels)
+log2.cpm.filtered.norm.df.pivot <- pivot_longer(log2.cpm.filtered.norm.df, # dataframe to be pivoted
+                                                cols = -1, # column names to be stored as a SINGLE variable
+                                                names_to = "samples", # name of that new variable (column)
+                                                values_to = "expression") # name of new variable (column) storing all the values (data)
+```
+
+⸻
+
+STEP 1 — Run DESeq2 for each cell line
+
+For each of the 4 cell types:
+	•	NHBE: infected vs mock
+	•	A549: infected vs mock
+	•	A549-ACE2: infected vs mock
+	•	Calu-3: infected vs mock
+	
+```{r}
+targets <- studyDesign %>% 
+  filter(host_common_name == "human") %>% 
+  filter(cell_line == 'primary NHBE') %>% 
+  filter(treatment %in% c('Mock treatment', 'SARS-CoV-2 infected (MOI 2)'))
+
+treatment <- factor(targets$treatment)
+design <- model.matrix(~0 + treatment)
+colnames(design) <- levels(treatment)
+  
+v.DEGList.filtered.norm <- voom(human_DGEList.filtered.norm, design, plot = FALSE)
+fit <- lmFit(v.DEGList.filtered.norm, design)
+contrast.matrix <- makeContrasts(infection = `SARS-CoV-2 infected (MOI 2)` - `Mock treatment`,
+                                   levels=design)
+  
+  fits <- contrasts.fit(fit, contrast.matrix)
+  ebFit <- eBayes(fits)
+  myTopHits <- topTable(ebFit, adjust ="BH", coef=1, number=40000, sort.by="logFC")
+  myTopHits.df <- myTopHits %>%
+    as_tibble(rownames = "geneID")
+  
+  vplot <- ggplot(myTopHits.df) +
+    aes(y=-log10(adj.P.Val), x=logFC, text = paste("Symbol:", geneID)) +
+    geom_point(size=2) +
+    geom_hline(yintercept = -log10(0.01), linetype="longdash", colour="grey", linewidth=1) +
+    geom_vline(xintercept = 1, linetype="longdash", colour="#BE684D", linewidth=1) +
+    geom_vline(xintercept = -1, linetype="longdash", colour="#2C467A", linewidth=1) +
+    #annotate("rect", xmin = 1, xmax = 12, ymin = -log10(0.01), ymax = 7.5, alpha=.2, fill="#BE684D") +
+    #annotate("rect", xmin = -1, xmax = -12, ymin = -log10(0.01), ymax = 7.5, alpha=.2, fill="#2C467A") +
+    labs(title="Volcano plot",
+         subtitle = "SARS-CoV-2 infected vs mock",
+         caption=paste0("produced on ", Sys.time())) +
+    theme_bw()
+  
+  vplot_ggplotly <- ggplotly(vplot)
+  
+  results <- decideTests(ebFit, method="global", adjust.method="BH", p.value=0.01, lfc=2)
+  colnames(v.DEGList.filtered.norm$E) <- sampleLabels
+  diffGenes <- v.DEGList.filtered.norm$E[results[,1] !=0,]
+  diffGenes.df <- as_tibble(diffGenes, rownames = "geneID")
+```
+
+```{r}
+studyDesign %>% 
+  filter(host_common_name == "human") %>% 
+  filter(tissue_cell_type == "Lung Biopsy") %>% 
+  mutate(group = case_when(tolower(subject_status) %like% 'healthy%' ~ "healthy",
+                           tolower(subject_status) %like% 'covid%' ~ "covid")) 
+```
+
+	
+```{r}
+run_dge_analysis <- function(cell_line){
+  
+  if (cell_line %in% c("primary NHBE", "A549", "A549-ACE2", "Calu-3")) {
+    studyDesign <- studyDesign %>% 
+      filter(host_common_name == "human") %>% 
+      filter(treatment %in% c('Mock treatment', 'SARS-CoV-2 infected (MOI 2)')) %>% 
+      mutate(group = case_when(treatment == 'Mock treatment' ~ "control",
+                                 treatment == 'SARS-CoV-2 infected (MOI 2)' ~ "infected"))
+  } else if (cell_line == "Lung Biopsy") {
+     studyDesign <- studyDesign %>% 
+       filter(host_common_name == "human") %>% 
+       filter(tissue_cell_type == "Lung Biopsy") %>% 
+       mutate(group = case_when(tolower(subject_status) %like% 'healthy%' ~ "control",
+                           tolower(subject_status) %like% 'covid%' ~ "infected"))
+  } else {
+    stop("Invalid cell line. Please choose from: primary NHBE, A549, A549-ACE2, Calu-3, lung_biopsy.")
+  }
+  
+  if (cell_line == "primary NHBE") {
+    targets <- studyDesign %>% 
+      filter(host_common_name == "human") %>% 
+      filter(cell_line == 'primary NHBE') %>% 
+      filter(group %in% c('control', 'infected'))
+  } else if (cell_line == "A549") {
+    targets <- studyDesign %>% 
+      filter(host_common_name == "human") %>% 
+      filter(cell_line == 'A549') %>% 
+      filter(group %in% c('control', 'infected'))
+  } else if (cell_line == "A549-ACE2") {
+    targets <- studyDesign %>% 
+      filter(host_common_name == "human") %>% 
+      filter(cell_line == 'A549-ACE2') %>% 
+      filter(group %in% c('control', 'infected'))
+  } else if (cell_line == "Calu-3") {
+    targets <- studyDesign %>% 
+      filter(host_common_name == "human") %>% 
+      filter(cell_line == 'Calu-3') %>% 
+      filter(group %in% c('control', 'infected'))
+  } else if (cell_line == "Calu-3") {
+    targets <- studyDesign %>% 
+      filter(host_common_name == "human") %>% 
+      filter(cell_line == 'Calu-3') %>% 
+      filter(group %in% c('control', 'infected'))
+  } else if (cell_line == "Lung Biopsy") {
+    targets <- studyDesign %>% 
+      filter(host_common_name == "human") %>% 
+      filter(tissue_cell_type == "Lung Biopsy") %>% 
+      filter(group %in% c('control', 'infected'))
+  }
+  
+  samples <- targets$sample
+  group <- factor(targets$group)
+  design <- model.matrix(~0 + group)
+  colnames(design) <- levels(group)
+  
+  v.DEGList.filtered.norm <- voom(human_DGEList.filtered.norm[ , samples ], design, plot = FALSE)
+  fit <- lmFit(v.DEGList.filtered.norm, design)
+  contrast.matrix <- makeContrasts(infection = infected - control,
+                                   levels=design)
+  
+  fits <- contrasts.fit(fit, contrast.matrix)
+  ebFit <- eBayes(fits)
+  myTopHits <- topTable(ebFit, adjust ="BH", coef=1, number=40000, sort.by="logFC")
+  myTopHits.df <- myTopHits %>%
+    as_tibble(rownames = "geneID")
+  
+  vplot <- ggplot(myTopHits.df) +
+    aes(y=-log10(adj.P.Val), x=logFC, text = paste("Symbol:", geneID)) +
+    geom_point(size=2) +
+    geom_hline(yintercept = -log10(0.01), linetype="longdash", colour="grey", linewidth=1) +
+    geom_vline(xintercept = 1, linetype="longdash", colour="#BE684D", linewidth=1) +
+    geom_vline(xintercept = -1, linetype="longdash", colour="#2C467A", linewidth=1) +
+    #annotate("rect", xmin = 1, xmax = 12, ymin = -log10(0.01), ymax = 7.5, alpha=.2, fill="#BE684D") +
+    #annotate("rect", xmin = -1, xmax = -12, ymin = -log10(0.01), ymax = 7.5, alpha=.2, fill="#2C467A") +
+    labs(title="Volcano plot",
+         subtitle = "SARS-CoV-2 infected vs mock",
+         caption=paste0("produced on ", Sys.time())) +
+    theme_bw()
+  
+  vplot_ggplotly <- ggplotly(vplot)
+  
+  
+  results <- decideTests(ebFit, method="global", adjust.method="BH", p.value=0.01, lfc=2)
+  colnames(v.DEGList.filtered.norm$E) <- samples
+  diffGenes <- v.DEGList.filtered.norm$E[results[,1] !=0,]
+  diffGenes.df <- as_tibble(diffGenes, rownames = "geneID")
+  
+  return(list("DESeq2_results" = myTopHits.df,
+              "volcano_plot" = vplot_ggplotly,
+              "DEGs" = diffGenes.df))
+}
+
+
+```
+
+```{r}
+# comparing upregulated counts in lung biopsy samples to upregulated counts in cell lines
+# lung upregulated genes
+
+run_upregulated_share <- function(cell_lines = c("primary NHBE", "A549", "A549-ACE2", "Calu-3")){
+  
+  lung_upregulated_genes <- run_dge_analysis("Lung Biopsy")$DESeq2_results %>% 
+  filter(logFC >= 0) %>% 
+  filter(adj.P.Val <= 0.05) %>% 
+  arrange(desc(logFC)) %>% 
+  arrange(adj.P.Val)
+  
+  cell_line_upregulated_list <- list()
+  lung_cell_line_shared_upregulated_list <- list()
+  
+  for (cell_line in cell_lines) {
+    cell_line_upregulated_genes <- run_dge_analysis(cell_line)$DESeq2_results %>% 
+      filter(logFC >= 0) %>% 
+      filter(adj.P.Val <= 0.05) %>% 
+      arrange(desc(logFC)) %>% 
+      arrange(adj.P.Val)
+    
+    cell_line_upregulated_list[[cell_line]] <- cell_line_upregulated_genes
+    
+    shared_upregulated_genes <- lung_upregulated_genes %>% select(geneID) %>%
+      inner_join(cell_line_upregulated_list[[cell_line]] %>% select(geneID), by = "geneID") %>% 
+      mutate(shared_upregulated = n()) %>% 
+      distinct(shared_upregulated) %>% 
+      mutate(cell_line = cell_line,
+             pct_of_all_lung_upregulated = (shared_upregulated/lung_upregulated_genes %>% summarize(count = n()) %>% pull()) * 100) %>% 
+      select(cell_line, shared_upregulated, pct_of_all_lung_upregulated)
+    
+    lung_cell_line_shared_upregulated_list[[cell_line]] <- shared_upregulated_genes
+    
+  }
+  
+  combined_results <- dplyr::bind_rows(lung_cell_line_shared_upregulated_list)
+  
+  return(list(
+      cell_line_upregulated = cell_line_upregulated_list,
+      shared_counts = lung_cell_line_shared_upregulated_list,
+      combined_results = combined_results
+    ))
+}
+
+# Load ggplot2
+library(ggplot2)
+
+# Create data
+dge_results <- run_upregulated_share()$combined_results
+
+# Barplot
+dge_plot <- ggplotly(ggplot(dge_results, aes(x=cell_line, y=pct_of_all_lung_upregulated, fill = cell_line)) + 
+  geom_bar(stat = "identity") +
+  ylim(0, 100) +
+  coord_flip() + 
+  labs(title = "Percentage of Lung Upregulated Genes Shared with Cell Lines",
+       x = "Cell Line",
+       y = "Percentage of Lung Upregulated Genes")  + 
+  theme_light() + 
+  theme(legend.position = "none"))
+```
+
+
+Produce:
+	•	DESeq2 results table
+	•	Volcano plot
+	•	List of significant DEGs
+	•	(Optional) enriched pathways
+
+You now have 4 cell-line infection signatures.
+
+⸻
+
+STEP 2 — Run DESeq2 for lung tissue
+
+Compare:
+	•	COVID lung vs healthy lung
+
+Produce:
+	•	DESeq2 results table
+	•	Volcano plot
+	•	List of DEGs
+
+You now have the “real lung disease signature.”
+
+⸻
+
+STEP 3 — Compare cell lines to lung tissue
+
+3A. Fold-change correlation
+
+For each cell line:
+	•	Compute correlation of |log2FC| with lung |log2FC|
+
+Higher correlation = more similar to real lungs.
+
+3B. DEG overlap
+
+Count how many up-regulated and down-regulated genes overlap with lungs.
+
+3C. Pathway overlap
+
+Compare enriched pathways (e.g., interferon, cytokines, apoptosis).
+
+⸻
+
+STEP 4 — PCA
+
+Run PCA on all human samples:
+	•	Healthy lungs
+	•	COVID lungs
+	•	Mock cell lines
+	•	Infected cell lines
+
+Look for:
+
+👉 The infected cell line samples that cluster closest to the COVID lung samples.
+
+This is visual similarity evidence.
+
+```{r}
+filtered_studyDesign <- studyDesign %>% 
+      filter(host_common_name == "human") %>% 
+  filter(cell_line %in% c("primary NHBE", "A549", "A549-ACE2", "Calu-3") | tissue_cell_type == "Lung Biopsy") %>% 
+  filter(treatment %in% c('Mock treatment', 'SARS-CoV-2 infected (MOI 2)') | subject_status %like% 'healthy%' | subject_status %like% 'COVID%') %>% 
+  mutate(group = case_when(treatment == 'Mock treatment' ~ "control",
+                                 treatment == 'SARS-CoV-2 infected (MOI 2)' ~ "infected",
+                          tolower(subject_status) %like% 'healthy%' ~ "control",
+                           tolower(subject_status) %like% 'covid%' ~ "infected")) %>% 
+  mutate(cell_line = case_when(tissue_cell_type == "Lung Biopsy" ~ "Lung Biopsy",
+                               TRUE ~ cell_line)) %>% 
+  filter(group == "infected")
+```
+
+```{r}
+filtered_studyDesign
+```
+
+
+```{r}
+filtered_studyDesign <- studyDesign %>% 
+      filter(host_common_name == "human") %>% 
+  filter(cell_line %in% c("primary NHBE", "A549", "A549-ACE2", "Calu-3") | tissue_cell_type == "Lung Biopsy") %>% 
+  filter(treatment %in% c('Mock treatment', 'SARS-CoV-2 infected (MOI 2)') | subject_status %like% 'healthy%' | subject_status %like% 'COVID%') %>% 
+  mutate(group = case_when(treatment == 'Mock treatment' ~ "control",
+                                 treatment == 'SARS-CoV-2 infected (MOI 2)' ~ "infected",
+                          tolower(subject_status) %like% 'healthy%' ~ "control",
+                           tolower(subject_status) %like% 'covid%' ~ "infected")) %>% 
+  mutate(cell_line = case_when(tissue_cell_type == "Lung Biopsy" ~ "Lung Biopsy",
+                               TRUE ~ cell_line)) %>% 
+  filter(group == "infected")
+
+group <- filtered_studyDesign$group
+group <- factor(group)
+cell_line <- filtered_studyDesign$cell_line
+cell_line <- factor(cell_line)
+sampleLabels <- filtered_studyDesign$sample
+
+pca.res <- prcomp(t(log2.cpm.filtered.norm[ , filtered_studyDesign$sample ]), scale.=F, retx=T)
+pc.var <- pca.res$sdev^2 # sdev^2 captures these eigenvalues from the PCA result
+pc.per <- round(pc.var/sum(pc.var)*100, 1) 
+pca.res.df <- as_tibble(pca.res$x, rownames = "sample")  %>% 
+  left_join(filtered_studyDesign %>% 
+              mutate(model_condition = paste0(cell_line, group, sep = "_")) %>%
+              select(sample, cell_line, group, model_condition), by = c("sample" = "sample"))
+pca.plot <- ggplot(pca.res.df) +
+  aes(x=PC1, y=PC2, label=model_condition, color = cell_line) +
+  geom_point(size=4) +
+  stat_ellipse() +
+  xlab(paste0("PC1 (",pc.per[1],"%",")")) + 
+  ylab(paste0("PC2 (",pc.per[2],"%",")")) +
+  labs(title="PCA plot",
+       caption=paste0("produced on ", Sys.time())) +
+  coord_fixed() +
+  theme_bw()
+
+ggplotly(pca.plot)
+```
+
+```{r}
+library(dplyr)
+library(stringr)
+library(tibble)
+library(ggplot2)
+
+# Filter metadata to relevant samples
+filtered_studyDesign <- studyDesign %>% 
+  filter(host_common_name == "human") %>%
+  filter(cell_line %in% c("primary NHBE", "A549", "A549-ACE2", "Calu-3") |
+         tissue_cell_type == "Lung Biopsy") %>%
+  filter(treatment %in% c("Mock treatment", "SARS-CoV-2 infected (MOI 2)") |
+         str_detect(tolower(subject_status), "healthy") |
+         str_detect(tolower(subject_status), "covid")) %>%
+  mutate(
+    group = case_when(
+      treatment == "Mock treatment" ~ "control",
+      treatment == "SARS-CoV-2 infected (MOI 2)" ~ "infected",
+      str_detect(tolower(subject_status), "healthy") ~ "control",
+      str_detect(tolower(subject_status), "covid") ~ "infected"
+    )
+  ) %>%
+  mutate(
+    cell_line = case_when(
+      tissue_cell_type == "Lung Biopsy" ~ "Lung Biopsy",
+      TRUE ~ cell_line
+    )
+  )
+
+# Extract variables
+group <- factor(filtered_studyDesign$group)
+cell_line <- factor(filtered_studyDesign$cell_line)
+sampleLabels <- filtered_studyDesign$sample
+
+# Run PCA
+pca.res <- prcomp(
+  t(log2.cpm.filtered.norm[, filtered_studyDesign$sample]),
+  scale. = TRUE,
+  retx = TRUE
+)
+
+# Variance explained
+pc.var <- pca.res$sdev^2
+pc.per <- round(pc.var / sum(pc.var) * 100, 1)
+
+# Convert PCA output to dataframe and attach metadata
+pca.res.df <- as_tibble(pca.res$x, rownames = "sample") %>% 
+  left_join(
+    filtered_studyDesign %>%
+      mutate(model_condition = paste(cell_line, group, sep = "_")) %>%
+      select(sample, cell_line, group, model_condition),
+    by = "sample"
+  )
+
+# PCA plot
+pca.plot <- ggplot(pca.res.df) +
+  aes(
+    x = PC1,
+    y = PC2,
+    color = cell_line,
+    shape = group
+  ) +
+  geom_point(size = 4) +
+  stat_ellipse() +
+  xlab(paste0("PC1 (", pc.per[1], "%)")) +
+  ylab(paste0("PC2 (", pc.per[2], "%)")) +
+  labs(
+    title = "PCA plot",
+    caption = paste0("produced on ", Sys.time())
+  ) +
+  coord_fixed() +
+  theme_bw()
+
+pca.plot
+```
+
+
+```{r}
+library(dplyr)
+library(stringr)
+library(tibble)
+library(ggplot2)
+
+############################################################
+# 1. Filter metadata to relevant samples
+############################################################
+
+filtered_studyDesign <- studyDesign %>% 
+  filter(host_common_name == "human") %>%
+  filter(cell_line %in% c("primary NHBE", "A549", "A549-ACE2", "Calu-3") |
+         tissue_cell_type == "Lung Biopsy") %>%
+  filter(
+    treatment %in% c("Mock treatment", "SARS-CoV-2 infected (MOI 2)") |
+    str_detect(tolower(subject_status), "healthy") |
+    str_detect(tolower(subject_status), "covid")
+  ) %>%
+  mutate(
+    group = case_when(
+      treatment == "Mock treatment" ~ "control",
+      treatment == "SARS-CoV-2 infected (MOI 2)" ~ "infected",
+      str_detect(tolower(subject_status), "healthy") ~ "control",
+      str_detect(tolower(subject_status), "covid") ~ "infected"
+    )
+  ) %>%
+  mutate(
+    cell_line = case_when(
+      tissue_cell_type == "Lung Biopsy" ~ "Lung Biopsy",
+      TRUE ~ cell_line
+    )
+  )
+
+############################################################
+# 2. Select samples used in PCA
+############################################################
+
+selected_samples <- filtered_studyDesign$sample
+
+############################################################
+# 3. Subset normalized expression matrix
+############################################################
+
+expr_matrix <- log2.cpm.filtered.norm[, selected_samples]
+
+############################################################
+# 4. Remove housekeeping genes using variance filtering
+############################################################
+
+gene_var <- apply(expr_matrix, 1, var)
+
+top_genes <- names(sort(gene_var, decreasing = TRUE))[1:1000]
+
+pca_matrix <- expr_matrix[top_genes, ]
+
+############################################################
+# 5. Run PCA
+############################################################
+
+pca.res <- prcomp(
+  t(pca_matrix),
+  scale. = TRUE,
+  retx = TRUE
+)
+
+############################################################
+# 6. Compute variance explained
+############################################################
+
+pc.var <- pca.res$sdev^2
+pc.per <- round(pc.var / sum(pc.var) * 100, 1)
+
+############################################################
+# 7. Convert PCA output to dataframe and attach metadata
+############################################################
+
+pca.res.df <- as_tibble(pca.res$x, rownames = "sample") %>%
+  left_join(
+    filtered_studyDesign %>%
+      mutate(model_condition = paste(cell_line, group, sep = "_")) %>%
+      select(sample, cell_line, group, model_condition),
+    by = "sample"
+  )
+
+############################################################
+# 8. PCA plot
+############################################################
+
+pca.plot <- ggplot(pca.res.df) +
+  aes(
+    x = PC1,
+    y = PC2,
+    color = cell_line,
+    shape = group
+  ) +
+  geom_point(size = 4) +
+  stat_ellipse() +
+  xlab(paste0("PC1 (", pc.per[1], "%)")) +
+  ylab(paste0("PC2 (", pc.per[2], "%)")) +
+  labs(
+    title = "PCA plot (Top 1000 most variable genes)",
+    caption = paste0("produced on ", Sys.time())
+  ) +
+  coord_fixed() +
+  theme_bw()
+
+pca.plot
+```
+
+```{r}
+filtered_studyDesign <- studyDesign %>% 
+      filter(host_common_name == "human") %>% 
+  filter(cell_line %in% c("primary NHBE", "A549", "A549-ACE2", "Calu-3") | tissue_cell_type == "Lung Biopsy") %>% 
+  filter(treatment %in% c('Mock treatment', 'SARS-CoV-2 infected (MOI 2)') | subject_status %like% 'healthy%' | subject_status %like% 'COVID%') %>% 
+  mutate(group = case_when(treatment == 'Mock treatment' ~ "control",
+                                 treatment == 'SARS-CoV-2 infected (MOI 2)' ~ "infected",
+                          tolower(subject_status) %like% 'healthy%' ~ "control",
+                           tolower(subject_status) %like% 'covid%' ~ "infected")) %>% 
+  mutate(cell_line = case_when(tissue_cell_type == "Lung Biopsy" ~ "Lung Biopsy",
+                               TRUE ~ cell_line)) %>% 
+  filter(group == "infected")
+
+group <- filtered_studyDesign$group
+group <- factor(group)
+cell_line <- filtered_studyDesign$cell_line
+cell_line <- factor(cell_line)
+sampleLabels <- filtered_studyDesign$sample
+
+pca.res <- prcomp(t(log2.cpm.filtered.norm[ , filtered_studyDesign$sample ]), scale.=F, retx=T)
+pc.var <- pca.res$sdev^2 # sdev^2 captures these eigenvalues from the PCA result
+pc.per <- round(pc.var/sum(pc.var)*100, 1) 
+
+pca.res.df <- pca.res$x[,1:4] %>% # note that this is the first time you've seen the 'pipe' operator from the magrittr package
+  as_tibble() %>%
+  add_column(sample = sampleLabels,
+             group = group,
+             cell_line = cell_line)
+
+  
+pca.pivot <- pivot_longer(pca.res.df, # dataframe to be pivoted
+                          cols = PC1:PC4, # column names to be stored as a SINGLE variable
+                          names_to = "PC", # name of that new variable (column)
+                          values_to = "loadings") %>% # name of new variable (column) storing all the values (data)
+  mutate(model_condition = paste0(cell_line, group, sep = "_"))
+
+ggplot(pca.pivot) +
+  aes(x=model_condition, y=loadings, fill=cell_line) + # you could iteratively 'paint' different covariates onto this plot using the 'fill' aes
+  geom_bar(stat="identity") +
+  facet_wrap(~PC) +
+  labs(title="PCA 'small multiples' plot",
+       caption=paste0("produced on ", Sys.time())) +
+  theme_bw() +
+  coord_flip()
+```
+
+
+⸻
+
+STEP 5 — Final interpretation
+
+Summarize:
+	•	Which model had highest correlation?
+	•	Which had most shared DEGs?
+	•	Which had strongest shared pathways?
+	•	Which looked closest in PCA?
+
+Your conclusion will likely be:
+
+Calu-3 best matches COVID lungs → best model.
+
+⸻
+
+📌 Expected Outcome
+
+You will find:
+	•	Calu-3 ≈ most realistic
+	•	NHBE ≈ good
+	•	A549-ACE2 ≈ partially realistic
+	•	A549 ≈ not realistic
+
+This matches known biology and gives you a strong, clean narrative.
