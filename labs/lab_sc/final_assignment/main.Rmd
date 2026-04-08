@@ -1,0 +1,373 @@
+---
+title: "Final SC Assignment"
+output: html_notebook
+---
+
+# Main Question
+
+How do infection conditions affect cell type composition and marker gene expression, and how confidently can these cell types be distinguished based on their gene signatures?
+
+*Plain English: Infection changes the immune landscape, and not all cell types are equally well-defined.*
+
+```{r}
+# Load packages ----
+library(tidyverse)
+library(DropletUtils) # robust stats package for removing empty droplets from your data
+library(Seurat) # a huge, powerful, and popular library for analyzing single cell genomic data
+library(scater) # bioconductor package for quality control and visualization for scRNA-seq data
+library(scran) # bioconductor package for low level processing of scRNA-seq data
+library(Matrix)
+library(scales)
+library(rjson)
+library(R2HTML)
+library(DT)
+```
+
+```{r}
+# Load the Seurat Object ----
+lleum.seurat <- LoadSeuratRds("~/MBMI/CAMB7140/labs/lab_sc/Ileum_lab14.Rds")
+```
+
+```{r}
+# color palette for graphs
+infection_colors <- c(
+  "Candida" = "#E76F51",
+  "Cryptosporidium" = "#2A9D8F",
+  "Naive" = "#457B9D",
+  "Yersinia" = "#9D4EDD"
+)
+```
+
+## Understanding the Dataset
+
+```{r}
+# What infection groups exist? 
+unique(lleum.seurat@meta.data[["InfectionStatus"]])
+```
+
+**Infection Groups:** Naive (Control), Cryptospridium, Yersinia, Candida
+
+```{r}
+# Cells per group
+lleum.seurat@meta.data %>% 
+  group_by(InfectionStatus) %>% 
+  summarise(n_cells = n())
+```
+
+## Splitting the dataset by infection group
+
+```{r}
+lleum_seurat <- split(lleum.seurat, f = lleum.seurat$InfectionStatus)
+```
+
+## Normalize
+
+```{r}
+# Now we normalize the Seurat object we just created and find variable features
+lleum_seurat <-NormalizeData(lleum_seurat, verbose = FALSE)
+lleum_seurat <- FindVariableFeatures(lleum_seurat, verbose = FALSE)
+```
+
+## Scale + PCA
+
+```{r}
+lleum_seurat <- ScaleData(lleum_seurat)
+lleum_seurat <- RunPCA(lleum_seurat)
+```
+
+## Integration
+
+```{r}
+lleum_integrated <- IntegrateLayers(
+  object = lleum_seurat,
+  method = CCAIntegration,
+  orig.reduction = "pca",
+  new.reduction = "integrated.cca",
+  verbose = FALSE
+)
+```
+
+## Clustering and UMAP
+
+```{r}
+# re-join layers after integration - quick
+lleum_integrated[["RNA"]] <- JoinLayers(lleum_integrated[["RNA"]])
+# repeat clustering and visualization on the integrated seurat object
+lleum_integrated <- FindNeighbors(lleum_integrated, reduction = "integrated.cca", dims = 1:30)
+lleum_integrated <- FindClusters(lleum_integrated, resolution = 1)
+lleum_integrated <- RunUMAP(lleum_integrated, dims = 1:30, reduction = "integrated.cca")
+DimPlot(lleum_integrated, reduction = "umap", group.by = c("InfectionStatus", "seurat_clusters"))
+```
+
+```{r}
+p1 <- DimPlot(
+  lleum_integrated, 
+  reduction = "umap", 
+  group.by = "InfectionStatus",
+  cols = infection_colors,
+  pt.size = 0.3
+) +
+  theme_classic() +
+  labs(title = "UMAP Colored by Infection Status") +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    axis.text = element_text(size = 10)
+  )
+
+p2 <- DimPlot(
+  lleum_integrated, 
+  reduction = "umap", 
+  group.by = "seurat_clusters",
+  label = TRUE,
+  pt.size = 0.3
+) +
+  theme_classic() +
+  labs(title = "UMAP Colored by Cluster") +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    axis.text = element_text(size = 10)
+  ) + theme(legend.position = "none")
+
+library(patchwork)
+
+p1 + p2
+```
+
+**Plot Interpretation:** Each point represents an individual cell. The left panel shows the distribution of cells by infection status, while the right panel displays clusters of cells with similar gene expression profiles (39 clusters). These clusters represent distinct cell populations. Many clusters contain cells from all infection conditions, indicating that these cell types are shared across conditions. However, some clusters show enrichment for specific infection statuses, suggesting shifts in cell population abundance. For example, certain clusters appear enriched for cells from the Yersinia condition. These patterns suggests that infection alters the abundance of specific cell populations rather than entirely different cell types.
+
+## Composition Plot
+
+```{r}
+# “For each cluster, what proportion of cells come from each infection?”
+composition_df <- lleum_integrated@meta.data %>% 
+  group_by(InfectionStatus, seurat_clusters) %>% 
+  summarize(count = n()) %>% ungroup() %>% group_by(seurat_clusters) %>%
+  mutate(proportion = count / sum(count)) %>% 
+  arrange(seurat_clusters, InfectionStatus)
+composition_df
+```
+
+```{r}
+composition_df <- composition_df %>%
+  group_by(seurat_clusters) %>%
+  mutate(max_infection = InfectionStatus[which.max(proportion)]) %>%
+  ungroup()
+
+composition_df$seurat_clusters <- factor(
+  composition_df$seurat_clusters,
+  levels = as.character(0:39)
+)
+
+p3 <- ggplot(composition_df, aes(x = seurat_clusters, y = proportion, fill = InfectionStatus)) + 
+  geom_bar(stat = "identity", color = "white", size = 0.2) +
+  coord_flip() +
+  scale_fill_manual(values = infection_colors) +
+  scale_x_discrete(
+  labels = function(x) {
+    ifelse(as.numeric(x) %% 5 == 0, x, "")
+  }
+) +
+  labs(
+    x = "Cluster",
+    y = "Proportion",
+    fill = "Infection",
+    title = "Cell Type Composition Across Infection Conditions"
+  ) +
+  theme_classic() +
+  theme(
+    axis.text.y = element_text(size = 7),
+    axis.text.x = element_text(size = 10),
+    plot.title = element_text(face = "bold", size = 14),
+    legend.position = "right"
+  )
+
+p3
+```
+
+**Plot Interpretation:** This plot shows the composition of cell types for each infection status
+
+-   Yersinia Cluster: Several clusters show strong enrichment for Yersinia, with some clusters composed of over 70% of Yersinia-derived cells
+
+-   Candida/Crypto clusters: Multiple clusters show increased representation of Candida and Cryptosporidium, suggesting shared cellular responses between these infections
+
+-   Stable Clusters: Some clusters exhibit relatively balanced contributions across all infection conditions, indicating conserved cell populations (e.g. cluster 0)
+
+## Marker Genes
+
+These are genes that are highly expressed in one cluster compared to others, helping define that cell population
+
+```{r}
+# finding marker genes
+markers <- FindAllMarkers(
+  lleum_integrated,
+  only.pos = TRUE,
+  min.pct = 0.25,
+  logfc.threshold = 0.25
+)
+```
+
+```{r}
+# pick top genes per cluster
+top_markers <- markers %>%
+  group_by(cluster) %>%
+  slice_max(order_by = avg_log2FC, n = 3)
+```
+
+```{r}
+# dotplot
+p4 <- DotPlot(
+  lleum_integrated,
+  features = unique(top_markers$gene)
+) +
+  theme_classic() +
+  labs(title = "Marker Gene Expression Across Clusters",
+       x = "Marker Genes",
+       y = "Cell Clusters") +
+  theme(
+    axis.text.x = element_text(angle = 90, size = 4),
+    axis.text.y = element_text(size = 6)
+  ) +
+
+  # 🔥 THIS IS THE CORRECT LINE
+  scale_y_discrete(
+    labels = function(x) {
+      ifelse(as.numeric(x) %% 5 == 0, x, "")
+    }
+  )
+
+p4
+```
+
+**Plot Interpretation:** The DotPlot reveals that while some genes are broadly expressed across multiple clusters (housekeeping genes), most clusters are characterized by a small number of strongly expressed, cluster specific genes. This suggests that the identified clusters represent distinct cell population with unique transcriptional profiles. Clusters with strong, specific marker expression can be identified with higher confidence, whereas clusters with weaker or more broadly expressed markers appear more ambiguous.
+
+## Confidence Analysis
+
+```{r}
+confidence_df <- top_markers %>%
+  group_by(cluster) %>%
+  summarise(
+    avg_marker_strength = mean(avg_log2FC),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    confidence_level = ifelse(
+      avg_marker_strength > median(avg_marker_strength),
+      "High",
+      "Low"
+    )
+  )
+```
+
+```{r}
+p5 <- ggplot(confidence_df, aes(x = factor(cluster), y = avg_marker_strength, fill = confidence_level)) +
+  geom_bar(stat = "identity", fill = "#2A9D8F") +
+  coord_flip() +
+  scale_fill_manual(values = c("High" = "#2A9D8F", "Low" = "#E76F51")) +
+  theme_classic() + 
+  labs(
+  x = "Cluster",
+  y = "Average Marker Strength (log2FC)",
+  title = "Cluster Confidence Based on Marker Gene Expression",
+  fill = "Confidence"
+) + 
+  scale_x_discrete(
+    labels = function(x) {
+      ifelse(as.numeric(x) %% 5 == 0, x, "")
+    }
+  )
+
+p5
+```
+
+**Plot Interpretation:** Clusters vary in how clearly they can be defined, with some exhibiting strong, distinct marker expression and others showing weaker, overlapping profiles
+
+## Final Plot
+
+```{r}
+library(ggplot2)
+library(patchwork)
+library(cowplot)
+library(ggtext)
+
+p4 <- p4 +
+  theme(
+    plot.title = element_text(face = "bold")
+  )
+
+p5 <- p5 +
+  theme(
+    plot.title = element_text(face = "bold")
+  )
+
+# ---------------------------
+# 1. BUILD MAIN GRID (A–E)
+# ---------------------------
+top_row <- plot_grid(p1, p2, labels = c("A", "B"), label_size = 14)
+mid_row <- plot_grid(p3, p4, labels = c("C", "D"), label_size = 14)
+bottom_row <- plot_grid(p5, labels = "E", label_size = 14)
+
+main_plot <- plot_grid(
+  top_row,
+  mid_row,
+  bottom_row,
+  ncol = 1,
+  rel_heights = c(1, 1, 0.7)
+)
+
+# ---------------------------
+# 2. TITLE + SUBTITLE (PATCHWORK)
+# ---------------------------
+main_with_title <- main_plot +
+  plot_annotation(
+    title = "Infection-Driven Changes in Cell Type Composition and Gene Expression in the MIST Dataset",
+    subtitle = "Ashley Batugo | DIYTranscriptomics"
+  ) &
+  theme(
+    plot.title = element_text(hjust = 0, face = "bold", size = 16),
+    plot.subtitle = element_text(hjust = 0, size = 11)
+  )
+
+# ---------------------------
+# 3. FORMATTED CAPTION (GGTEXT)
+# ---------------------------
+caption_text <- paste0(
+  "<b>Figure. Infection-driven changes in cell type composition and gene expression in the MIST dataset.</b><br><br>
+(A–B) UMAP plots show how cells are distributed across infection conditions and cluster identities.<br>
+(C) Infection alters cell population abundance, with certain clusters becoming enriched under specific conditions, especially in the Yersinia group.<br>
+(D) Marker gene expression is strongly cluster-specific, making it easier to confidently distinguish cell types.<br>
+(E) Marker strength (log2FC) reflects how clearly each cluster can be defined based on its gene expression.<br><br>
+<b>Overall, infection affects cell type composition, and these cell types can be distinguished based on their top gene expression, with some clusters being more clearly defined than others.</b>"
+)
+
+caption_plot <- ggplot() +
+  annotate(
+    "richtext",
+    x = 0, y = 1,
+    label = caption_text,
+    hjust = 0, vjust = 1,
+    size = 3.5,
+    fill = NA,
+    label.color = NA
+  ) +
+  theme_void() +
+  xlim(0, 1) + ylim(0, 1)
+
+# ---------------------------
+# 4. FINAL COMBINE (COWPLOT)
+# ---------------------------
+final_plot <- ggdraw() +
+  draw_plot(main_with_title, x = 0, y = 0.15, width = 1, height = 0.85) +
+  draw_plot(caption_plot, x = 0, y = 0, width = 1, height = 0.15)
+
+# ---------------------------
+# 5. SAVE (IMPORTANT)
+# ---------------------------
+ggsave(
+  "./abatugo_sc.png",
+  final_plot,
+  width = 14,
+  height = 12,
+  dpi = 300,
+  bg = "white"
+)
+```

@@ -1,0 +1,151 @@
+PROJECT GAME PLAN – MIST SINGLE-CELL FINAL
+
+⸻
+
+	1.	FINAL QUESTION
+
+⸻
+
+How do infection conditions affect cell type composition and marker gene expression, and how confidently can these cell types be distinguished based on their gene signatures?
+
+⸻
+
+	2.	OVERALL GOAL
+
+⸻
+
+Use standard single-cell RNA-seq analysis (Seurat workflow) to:
+	1.	Identify cell types
+	2.	Compare how they change across infection conditions
+	3.	Evaluate how clearly (confidently) these cell types can be identified based on marker genes
+
+⸻
+
+	3.	DATASET SETUP
+
+⸻
+
+	•	Load Seurat object (MIST dataset)
+	•	Check metadata:
+	•	infection variable (e.g., infection_status)
+	•	tissue (optional if you want to subset)
+	•	clusters (seurat_clusters)
+
+Commands to inspect:
+colnames(seurat_obj@meta.data)
+table(seurat_obj$infection_status)
+
+⸻
+
+	4.	ANALYSIS STEPS
+
+⸻
+
+STEP 1 – Baseline clustering visualization
+	•	Plot UMAP colored by cluster
+Goal: Understand overall cell populations
+
+STEP 2 – Identify marker genes
+	•	Use FindAllMarkers()
+	•	Select top 3–5 marker genes per cluster
+Goal: Define what each cluster represents biologically
+
+STEP 3 – Assign rough cell types
+	•	Use known marker genes (e.g. CD3D, EPCAM, LYZ)
+	•	Label clusters if possible
+Goal: Interpret clusters biologically
+
+STEP 4 – Compare across infection conditions
+	•	Plot UMAP split by infection
+Goal: See how cell populations shift visually
+
+STEP 5 – Cell type composition analysis
+	•	Calculate proportion of each cluster per infection group
+	•	Create stacked bar plot
+Goal: Quantify how infection changes cell populations
+
+STEP 6 – Marker gene expression comparison
+	•	Create DotPlot or FeaturePlot for key genes
+Goal: Show how gene expression differs across clusters
+
+STEP 7 – Confidence / interpretability analysis (NOVEL PART)
+	•	For each cluster:
+	•	Evaluate strength of marker expression
+	•	Look for:
+	•	strong, specific markers → high confidence
+	•	weak or overlapping markers → low confidence
+
+Optional simple metric:
+	•	average expression of top markers per cluster
+
+Goal: Identify which cell types are clearly defined vs ambiguous
+
+⸻
+
+	5.	FINAL FIGURE (MULTI-PANEL)
+
+⸻
+
+Panel A:
+UMAP colored by cluster
+
+Panel B:
+UMAP split by infection condition
+
+Panel C:
+Stacked bar plot of cell type proportions
+
+Panel D:
+DotPlot of marker genes
+
+Panel E (NOVEL PANEL):
+Confidence / interpretability of clusters
+(e.g., marker strength or highlight ambiguous clusters)
+
+⸻
+
+	6.	KEY MESSAGE (RESULTS)
+
+⸻
+
+Infection alters both:
+	1.	Cell type composition
+	2.	Gene expression patterns
+
+Additionally:
+	•	Some cell types show strong, clear marker signatures
+	•	Others become less distinct, suggesting ambiguity in cell identity
+
+⸻
+
+	7.	FIGURE LEGEND (DRAFT TEMPLATE)
+
+⸻
+
+This figure examines how infection conditions influence cell type composition and gene expression in the MIST single-cell dataset. UMAP visualization reveals distinct cell populations, which shift across infection conditions. Proportional analysis demonstrates changes in cell type abundance, particularly among immune populations. Marker gene expression highlights defining features of each cluster. Notably, variability in marker strength suggests that some cell types can be identified with high confidence, while others exhibit more ambiguous transcriptional profiles.
+
+⸻
+
+	8.	IF SHORT ON TIME (MINIMUM VERSION)
+
+⸻
+
+Do ONLY:
+	•	UMAP
+	•	Split UMAP
+	•	Bar plot
+	•	DotPlot
+
+Then briefly mention confidence in text
+
+⸻
+
+	9.	FINAL CHECKLIST
+
+⸻
+
+	•	Figure has clear labels
+	•	Each panel is explained
+	•	Colors are consistent across plots
+	•	Biological interpretation included
+	•	Not just plots — includes insight

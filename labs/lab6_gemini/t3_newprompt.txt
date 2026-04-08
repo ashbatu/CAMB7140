@@ -1,0 +1,17 @@
+I would like you to perform bulk RNAseq analysis. You can use the following system resources. Please apply accordingly during processing to speed up as needed:
+
+OS: macOS, or Linux (WSL)
+CPU:  Apple CPU, or x86 (WSL)
+CPU threads: 8 (most laptop since 2016 should have 8 threads)
+
+I have 6 SRAs but I also have this (GSE159195) between 2 conditions I need to analyze. They are present in studyDesign.txt. Read the file, check the metadata to ensure accuracy. Use prefetch to get the sra files, then turn them into fastq files. Note, these are single-end data, so there is only one fastq file per sample.  Use pigz to zip up the fastq to save space. Delete the .sra files after fastq.gz files are made.
+
+This is just a test run, so please downsample each fastq file to 1 million reads to expedite downstream analyses.
+
+The human kallisto reference need to be made. You will use kallisto for alignment. When running Kallisto, be sure to save the STDOUT to a log.txt file for each sample, which will allow MultiQC to ingest this log file later.  After read mapping with Kallisto is complete, perform basic analysis such as differential expression analysis using R.  Make a few plots typical for RNAseq analysis. For each plot output PDF, JPG and PNG. Also output DESeq2 differential expression tables.  I would also like you to perform multiqc for all data after analysis is finished. 
+
+You are operating inside an activated conda env where most of the tools and R packages needed for this analysis should already be available from path. Here you can find a list of tools available from PATH: sra-tools, kallisto, fastqc, multiqc, samtools. Also here are the available R-packages available to you: deseq2, tximport, edger, limma, tidyverse, pheatmap, plotly, dt, ggrepel, cowplot.
+
+If you need additional tools, use "conda install -c conda-forge -c bioconda <CONDA_PKG_NAME>" to install them. The R packages are also installed via conda, so use the same formula when you need to install any additional R packages.
+
+After you formulate a plan, check with me before you start running. Explain clearly at each step what you plan to do when you ask for permission to execute tool calls.
